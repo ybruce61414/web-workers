@@ -3,13 +3,13 @@ import ReactDOM from 'react-dom/client'
 import App from './modules/App'
 import './index.css'
 
-const worker = new Worker('../worker.js')
-
-worker.onmessage = msg => {
-  console.log('--@index.js received: ', msg.data)
-}
-
-worker.postMessage('apple')
+// const worker = new Worker('../worker.js')
+//
+// worker.onmessage = msg => {
+//   console.log('--@index.js received: ', msg.data)
+// }
+//
+// worker.postMessage('from origin script -- apple')
 
 
 console.log('--worker setup done')
