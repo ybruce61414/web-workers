@@ -104,9 +104,14 @@
   font-size: 14px;
   transition: background-color 0.3s;
 }
-.export-btn:hover {
+.export-btn:hover:not(:disabled) {
   background-color: rgb(30, 144, 255, 0.8);
   /*background-color: #84A2FA;*/
+}
+
+.export-btn:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
 }
 .export-btn:focus,
 .export-btn:focus-visible {

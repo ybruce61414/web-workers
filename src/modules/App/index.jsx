@@ -1,4 +1,4 @@
-import {useState, useCallback, useMemo} from 'react'
+import { useState, useCallback, useMemo } from 'react'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faPlus } from '@fortawesome/free-solid-svg-icons'
 import AppHeader from './AppHeader.jsx'
@@ -6,44 +6,40 @@ import {exportCSV, heavyCalc, onmessage } from "../../utils/worker.js";
 import { _genRandomRawData } from "../../utils/index.js";
 import './App.scss'
 import CardComponents from "./CardComponents.jsx";
+import useFetchInitData from "../../api/useFetchInitData.jsx";
 
-// 1M may trigger slow calc
-const unit = 100000
 
 const worker = new Worker('../../worker.js')
 
 worker.addEventListener('message', onmessage.bind(window))
 
-// worker.onmessage = msg => {
-//   console.log('--@index.js received: ', msg.data, window)
-//   const data = msg.data
-//   const { type, rawData } = data
-//
-//   switch (type) {
-//     case 'heavy-calc':
-//     case 'blob': {
-//       saveFile.bind(window)(rawData)
-//       break;
-//     }
-//     default:
-//       break;
-//   }
-// }
-
 
 function App() {
   const [count, setCount] = useState(0)
+
+  const { data } = useFetchInitData()
 
   // callbacks
   const addCount = useCallback(() => {
     setCount((count) => count + 1)
   }, [])
 
-  const onBlockDownload = useCallback((size) => {
-    return () => {
-      exportCSV.bind(window)(_genRandomRawData(size))
+  const onBlockDownload = useCallback((type) => {
+    switch (type) {
+      case 'large': {
+        return () => {
+          if (data.state === 'ready') exportCSV.bind(window)(data.value)
+        }
+      }
+      case 'small':
+      default: {
+        return () => {
+          exportCSV.bind(window)(_genRandomRawData(10))
+        }
+      }
+
     }
-  }, [])
+  }, [data.state])
 
   const onBlockHeavyDownload = useCallback(() => {
     console.log('--onBlock heavyCalc start')
@@ -77,13 +73,14 @@ function App() {
         items: [
           {
             content: 'Export 10 records',
-            onClick: onBlockDownload(10),
+            onClick: onBlockDownload('small'),
             btnContent: 'download',
           },
           {
-            content: 'Export 1M records',
-            onClick: onBlockDownload(5 * unit),
+            content: 'Export 0.5M records',
+            onClick: onBlockDownload('large'),
             btnContent: 'download',
+            disabled: data.state !== 'ready'
           },
           {
             content: 'Export with CPU heavy task',
@@ -109,6 +106,7 @@ function App() {
       }
     ]
   }, [
+    data.state,
     onBlockDownload,
     onBlockHeavyDownload,
     onNonBlockDownload,
@@ -116,11 +114,15 @@ function App() {
   ])
 
 
+  console.log('---data', data)
+
   return (
     <div className="layout">
       <div className="content-section">
         <AppHeader />
-        <CardComponents config={cardConfig} />
+        <CardComponents
+          config={cardConfig}
+        />
         <section className="testing-card">
           <section className="export-block">
             <h3 className="row-item-header">
