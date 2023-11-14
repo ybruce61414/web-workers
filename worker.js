@@ -2,7 +2,9 @@
 // todo: import external script
 // self.importScripts('./src/utils/worker.js');
 
-const _genCSVData = rawData => {
+console.log('into worker.js')
+
+const _transformToCSV = rawData => {
   const refinedData = []
   let csvContent = ''
 
@@ -12,7 +14,6 @@ const _genCSVData = rawData => {
   rawData.forEach(data => {
     refinedData.push(Object.values(data))
   })
-
   refinedData.forEach(row => {
     csvContent += row.join(',') + '\n'
   })
@@ -20,21 +21,47 @@ const _genCSVData = rawData => {
   return csvContent
 }
 
-const _heavyCalc = () => {
-  const times = 1500
+const _transformToCSVWithHeavyCalc = rawData => {
+  console.log('--call _transformToCSVWithHeavyCalc')
+  const refinedData = []
+  let csvContent = ''
+
+  const csvTitle = Object.keys(rawData[0])
+  refinedData.push(csvTitle)
+
+  rawData.forEach(data => {
+    const values = Object.values(data)
+    // deliberate and meaningless to simulate heavy calc
+    refinedData.push(values.map(val => {
+      _heavyCalc(600)
+      let newVal = val
+      if (typeof val === 'string') {
+        newVal = 'heavy-calc-with-non-block-' + val
+      }
+      return newVal
+    }))
+  })
+  refinedData.forEach(row => {
+    csvContent += row.join(',') + '\n'
+  })
+
+  console.log('-- _transformToCSVWithHeavyCalc end')
+  return csvContent
+}
+
+function _heavyCalc(count) {
   let res = 0
-  for (let i = 0; i < times; i++) {
-    for (let j = 0; j < times; j++) {
-      for (let k = 0; k < times; k++) {
+  // console.log('-_heavyCalc start')
+  for (let i = 0; i < count; i++) {
+    for (let j = 0; j < count; j++) {
+      for (let k = 0; k < count; k++) {
         res += 1
       }
     }
   }
+  // console.log('-_heavyCalc end')
   return res
 }
-
-console.log('into worker.js')
-
 
 self.onmessage = event => {
   const data = event.data
@@ -44,24 +71,21 @@ self.onmessage = event => {
 
   switch (type) {
     case 'heavy-calc': {
-      const csvContent = _genCSVData(rawData)
+      const csvContent = _transformToCSVWithHeavyCalc(rawData)
 
       const blob = new Blob(
         [csvContent],
         { type: 'text/csv;charset=utf-8,' }
       )
 
-      console.log('-_heavyCalc start')
-      _heavyCalc()
-      console.log('-_heavyCalc end')
       postMessage({
         type: type,
         rawData: blob,
       });
-      break;
+      break
     }
     case 'blob': {
-      const csvContent = _genCSVData(rawData)
+      const csvContent = _transformToCSV(rawData)
 
       const blob = new Blob(
         [csvContent],
@@ -71,10 +95,11 @@ self.onmessage = event => {
         type: type,
         rawData: blob,
       });
-      break;
+      break
     }
     default: {
       console.error('invalid type passed in');
+      break
     }
   }
 }

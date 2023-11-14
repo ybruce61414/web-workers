@@ -1,12 +1,11 @@
 import { useState, useCallback, useMemo } from 'react'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faPlus } from '@fortawesome/free-solid-svg-icons'
-import AppHeader from './AppHeader.jsx'
-import {exportCSV, heavyCalc, onmessage } from "../../utils/worker.js";
-import { _genRandomRawData } from "../../utils/index.js";
-import './App.scss'
-import CardComponents from "./CardComponents.jsx";
+import AppHeader from './atoms/AppHeader.jsx'
+import { exportCSV, genRandomRawData, onmessage } from "../../utils/index.js";
+import CardComponents from "./atoms/CardComponents.jsx";
 import useFetchInitData from "../../api/useFetchInitData.jsx";
+import './App.scss'
 
 
 const worker = new Worker('../../worker.js')
@@ -15,8 +14,10 @@ worker.addEventListener('message', onmessage.bind(window))
 
 
 function App() {
+  // local state
   const [count, setCount] = useState(0)
 
+  // hooks
   const { data } = useFetchInitData()
 
   // callbacks
@@ -34,34 +35,30 @@ function App() {
       case 'small':
       default: {
         return () => {
-          exportCSV.bind(window)(_genRandomRawData(10))
+          exportCSV.bind(window)(genRandomRawData(10))
         }
       }
-
     }
   }, [data.state])
 
   const onBlockHeavyDownload = useCallback(() => {
-    console.log('--onBlock heavyCalc start')
-    heavyCalc()
-    console.log('--onBlock heavyCalc end')
-    exportCSV.bind(window)(_genRandomRawData(10))
+    // heavy calc
+    exportCSV.bind(window)(genRandomRawData(10), 'heavy-calc')
   }, [])
 
   const onNonBlockDownload = useCallback((size) => {
     return () => {
       worker.postMessage({
         type: 'blob',
-        rawData: _genRandomRawData(size)
+        rawData: genRandomRawData(size)
       })
     }
   }, [])
 
   const onNonBlockHeavyDownload = useCallback(() => {
-    console.log('--non-block heavyCalc')
     worker.postMessage({
       type: 'heavy-calc',
-      rawData: _genRandomRawData(10)
+      rawData: genRandomRawData(10)
     })
   }, [])
 
@@ -77,13 +74,13 @@ function App() {
             btnContent: 'download',
           },
           {
-            content: 'Export 0.5M records',
+            content: 'Export 50k records',
             onClick: onBlockDownload('large'),
             btnContent: 'download',
             disabled: data.state !== 'ready'
           },
           {
-            content: 'Export with CPU heavy task',
+            content: 'Export 10 records with CPU heavy task',
             onClick: onBlockHeavyDownload,
             btnContent: 'download',
           }
@@ -98,7 +95,7 @@ function App() {
             btnContent: 'download',
           },
           {
-            content: 'Export with CPU heavy task',
+            content: 'Export 10 records with CPU heavy task',
             onClick: onNonBlockHeavyDownload,
             btnContent: 'download',
           }
@@ -114,7 +111,7 @@ function App() {
   ])
 
 
-  console.log('---data', data)
+  // console.log('---data', data)
 
   return (
     <div className="layout">

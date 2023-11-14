@@ -1,9 +1,9 @@
 import { useEffect, useState } from "react";
-import { _genRandomRawData } from "../utils/index.js";
+import { genRandomRawData } from "../utils/index.js";
 
 const initData = { state: 'init', value: [] }
 
-const unit = 100000
+const dataCount = 100000
 const useFetchInitData = () => {
   const [data, setData] = useState(initData)
 
@@ -11,7 +11,7 @@ const useFetchInitData = () => {
     try {
       const res = await new Promise((resolve) => {
         setTimeout(() => {
-          resolve(_genRandomRawData(0.5 * unit))
+          resolve(genRandomRawData(0.5 * dataCount))
         }, 2000);
       })
 
